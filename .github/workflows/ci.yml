@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile export_glb.py
+        run: python3 -m py_compile scripts/export_glb.py
+      - name: Enforce English-only reference docs
+        run: |
+          set -e
+          hits=$(grep -rEl 'à|è|é|ì|ò|ù|À|È|É|Ì|Ò|Ù' SKILL.md README.md CONTRIBUTING.md CREDITS.md references/ 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "Italian accent characters found in English-only docs:"
+            echo "$hits"
+            exit 1
+          fi
