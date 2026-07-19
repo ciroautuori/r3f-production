@@ -1,8 +1,9 @@
-# r170 -> r183 migration checklist
+> **Fonte**: [emalorenzo/three-agent-skills](https://github.com/emalorenzo/three-agent-skills) - three-best-practices/rules/migration-checklist.md
 
-> **Source**: [emalorenzo/three-agent-skills](https://github.com/emalorenzo/three-agent-skills) — `three-best-practices/rules/migration-checklist.md`. Kept under MIT with attribution.
+# Migration Checklist
 
 Breaking changes and migration guide for Three.js versions.
+
 ## Recent Changes (r180-r183)
 
 ### r182 → r183

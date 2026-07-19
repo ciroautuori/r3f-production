@@ -1,47 +1,47 @@
-# Performance diagnosis — dal sintomo alla causa
+# Performance diagnosis — from symptom to cause
 
-Primo strumento, sempre: `renderer.info` (`render.calls`, `render.triangles`, `memory.geometries/textures`, `programs.length`). Non ottimizzare prima di aver letto questi numeri. Soglie target/warning/critical: `quality-governance.md`.
+First tool, always: `renderer.info` (`render.calls`, `render.triangles`, `memory.geometries/textures`, `programs.length`). Do not optimize before reading these numbers. Target/warning/critical thresholds: quality-governance.md.
 
-## Flowchart diagnostico
+## Diagnostic flowchart
 
 ```
-FPS bassi?
-├─ draw calls > 200? ──sì──► CPU-bound su submit: instancing/merge/BatchedMesh, meno materiali unici
-│
-├─ triangles > 2M? ──sì────► GPU vertex-bound: LOD, simplify, frustum culling per area
-│
-├─ programs.length alto? ──► shader-variant explosion: unifica materiali, meno define dinamiche
-│
-├─ frame time ok ma jank? ─► GC pause: allocazioni in useFrame, setState nel loop
-│
-├─ memory counters crescono? ► leak: dispose mancato (geometry, material, 12 slot texture, render target)
-│
-└─ heap JS cresce? ────────► leak lato JS: listener non rimossi, cache senza eviction, ref circolari
+Low FPS?
++- draw calls > 200? --yes--> CPU-bound on submit: instancing/merge/BatchedMesh, fewer unique materials
+|
++- triangles > 2M? --yes------> GPU vertex-bound: LOD, simplify, per-area frustum culling
+|
++- programs.length high? -----> shader-variant explosion: unify materials, fewer dynamic defines
+|
++- frame time ok but jank? ---> GC pauses: useFrame allocations, setState in the loop
+|
++- memory counters growing? --> leak: missing dispose (geometry, material, 12-slot texture, render target)
+|
++- JS heap grows? ------------> JS-side leak: listeners not removed, cache without eviction, circular refs
 ```
 
-GPU-bound vs CPU-bound: riduci DPR a 0.5 → se FPS non migliora è CPU/draw-call-bound; se migliora è GPU/fill-bound (post-processing, overdraw, texture).
+GPU-bound vs CPU-bound: drop DPR to 0.5 -> if FPS does not improve it is CPU/draw-call-bound; if it improves it is GPU/fill-bound (post-processing, overdraw, texture).
 
-## Decision tree geometrie ripetute
+## Repeated geometry decision tree
 
-- Poche copie (< 100), stessa mesh: `MergedGeometry` (BufferGeometryUtils) se statiche, altrimenti mesh separate
-- > 100 copie: sempre `InstancedMesh` (o drei `<Merged>`/`<Instances>`)
-- > 10.000 istanze o materiali diversi per istanza: `BatchedMesh` (r159+)
-- Frustum culling su InstancedMesh opera sulla **bounding sphere dell'intero gruppo**: splittare per area/zona, altrimenti il culling non scatta mai
+- Few copies (< 100), same mesh: `MergedGeometry` (BufferGeometryUtils) if static, otherwise separate meshes
+- > 100 copies: always `InstancedMesh` (or drei `<Merged>`/`<Instances>`)
+- > 10,000 instances or different materials per instance: `BatchedMesh` (r159+)
+- Frustum culling on InstancedMesh operates on the **whole group's bounding sphere**: split by area/zone, or culling never triggers
 
-## Leve in ordine di costo/beneficio
+## Levers in cost/benefit order
 
-1. Taglia pass di post-processing (costo zero, beneficio immediato) — bloom 0.5× res, SSAO off su mobile
-2. Abbassa DPR (PerformanceMonitor / AdaptiveDpr)
-3. Shadow: mapSize giù, caster meno, `autoUpdate=false` su scene statiche
-4. LOD + frustum culling per area
+1. Cut post-processing passes (zero cost, immediate benefit) — bloom at 0.5x res, SSAO off on mobile
+2. Lower DPR (PerformanceMonitor / AdaptiveDpr)
+3. Shadows: lower mapSize, fewer casters, `autoUpdate=false` on static scenes
+4. LOD + per-area frustum culling
 5. Instancing/batching/merge
-6. Texture: KTX2, dimensioni giù, anisotropy selettiva
-7. Solo alla fine: riscrivere geometria
+6. Textures: KTX2, lower dimensions, selective anisotropy
+7. Only as a last resort: rewrite geometry
 
 ## Raycasting
 
-three-mesh-bvh (~100× su mesh complesse), throttling hover a ~50ms (20fps bastano), filtro via `layers`, GPU picking con `readRenderTargetPixels` per selezione massiva, Octree per capsule collision. In R3F: drei `Bvh` component, `raycast={() => null}` per escludere i decorativi.
+three-mesh-bvh (~100x on complex meshes), throttle hover to ~50ms (20fps is enough), filter via `layers`, GPU picking with `readRenderTargetPixels` for massive selection, Octree for capsule collision. In R3F: drei `Bvh` component, `raycast={() => null}` to exclude decorative meshes.
 
-## Regola d'oro
+## Golden rule
 
-Ottimizza per il dispositivo peggiore del tier dichiarato (Android medio per mobile, GPU integrata per desktop). "Sul mio M4 va a 120fps" non è una metrica.
+Optimize for the worst device of the declared tier (mid Android for mobile, integrated GPU for desktop). "It runs at 120fps on my M4" is not a metric.

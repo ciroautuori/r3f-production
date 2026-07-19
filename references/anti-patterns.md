@@ -1,96 +1,96 @@
 # Anti-patterns — WRONG / WHY / CORRECT
 
-Formato: ogni voce ha il codice-review tell (come lo riconosci in review), perché è sbagliato, e la correzione. Merged da: 3d-tips, 3d-zustand, awwwards-3d hard rules, impertio errors/R3F/drei/physics, emalorenzo rules, nice-wolf ECS (citato negativamente).
+Each entry has a code-review tell (how you spot it in review), why it is wrong, and the fix. Merged from public R3F/Three.js best-practice references and field-tested review notes. See CREDITS.md for sources.
 
-## Loop e stato React
+## React loop and state
 
-**`setState` o store update dentro `useFrame`** — WHY: re-render React a 60fps, il loop muore. CORRECT: ref + mutation + `delta`; intenti nel bridge store (vedi state-management.md).
+**`setState` or store update inside `useFrame`** — WHY: React re-render at 60fps, the loop dies. CORRECT: ref + mutation + `delta`; intents via the store bridge (see state-management.md).
 
-**Allocazioni per frame** (`new Vector3()`, `new Color()`, array, oggetti nel loop) — WHY: GC pause = jank. CORRECT: oggetti riusati via ref/useMemo/module scope.
+**Per-frame allocations** (`new Vector3()`, `new Color()`, arrays, objects in the loop) — WHY: GC pauses = jank. CORRECT: reuse objects via ref/useMemo/module scope.
 
-**Animazioni basate su frame-count** (`rotation.y += 0.01`) — WHY: a 144Hz va 2.4× più veloce che a 60Hz. CORRECT: sempre `delta` time; damping `1 - Math.exp(-lambda * delta)`.
+**Frame-count-based animations** (`rotation.y += 0.01`) — WHY: at 144Hz it runs 2.4x faster than at 60Hz. CORRECT: always `delta` time; damping `1 - Math.exp(-lambda * delta)`.
 
-**Polling da mondo esterno con `setInterval` + `setState`** (pattern ECS nice-wolf: `setInterval(updateEntities, 100)` / `setState` a 16ms) — WHY: re-render per frame, l'opposto del transient pattern. CORRECT: `useFrame` + subscribe imperativo; se serve ECS vero, non è un hero 3D (dominio sbagliato).
+**Polling the outside world with `setInterval` + `setState`** — WHY: per-frame re-render, the opposite of the transient pattern. CORRECT: `useFrame` + imperative subscribe; if you need a real ECS, this is not a 3D hero (wrong domain).
 
-**`useFrame(cb, priority > 0)` senza sapere che disattiva il render automatico** — WHY: schermo nero se nessun subscriber chiama `gl.render`. CORRECT: priority solo per ordinare (physics −100, camera follow +100), l'ultimo renderizza.
+**`useFrame(cb, priority > 0)` without knowing it disables automatic rendering** — WHY: black screen if no subscriber calls `gl.render`. CORRECT: priority is only for ordering (physics -100, camera follow +100); the last subscriber renders.
 
-**Mutazioni in `frameloop="demand"` senza `invalidate()`** — WHY: non appaiono mai a schermo. CORRECT: `invalidate()` dopo ogni mutazione, o subscription con `useFrame(cb, active ? 0 : null)` per pausa/resume.
+**Mutations in `frameloop="demand"` without `invalidate()`** — WHY: they never appear on screen. CORRECT: call `invalidate()` after every mutation, or subscribe with `useFrame(cb, active ? 0 : null)` for pause/resume.
 
-## Struttura R3F
+## R3F structure
 
-**`args` che cambiano identity** (`args={[new ...]}` inline) — WHY: ricrea l'oggetto three ad ogni render. CORRECT: args stabili, o props su oggetto esistente.
+**`args` that change identity** (`args={[new ...]}` inline) — WHY: recreates the Three.js object on every render. CORRECT: stable args, or props on an existing object.
 
-**Mount/unmount di scene pesanti in transizione** — WHY: ricompila shader, ricarica asset. CORRECT: `visible` + riuso asset, `dispose={null}` se gestito altrove.
+**Mount/unmount of heavy scenes during transitions** — WHY: recompiles shaders, reloads assets. CORRECT: `visible` + asset reuse, `dispose={null}` if managed elsewhere.
 
-**Raycast su tutta la scena per frame** — WHY: O(n) su mesh complesse. CORRECT: array piccolo di interagibili, `raycast={() => null}` per escludere, drei `Bvh`/`meshBounds`, proxy collision mesh invisibili.
+**Per-frame raycast over the whole scene** — WHY: O(n) on complex meshes. CORRECT: a small array of interactables, `raycast={() => null}` to exclude, drei `Bvh`/`meshBounds`, invisible collision proxy meshes.
 
-**OrbitControls in produzione** — WHY: look da demo. CORRECT: camera scroll-driven o rig. In dev: sempre `makeDefault` sui controls (senza, gli eventi R3F si rompono).
+**`OrbitControls` in production** — WHY: looks like a demo. CORRECT: camera scroll-driven or rig driven. In dev: always set `makeDefault` on controls (without it, R3F events break).
 
-**TransformControls senza disabilitare OrbitControls durante il drag** — WHY: drag impossibile. CORRECT: drei lo fa se entrambi `makeDefault`.
+**`TransformControls` without disabling OrbitControls during drag** — WHY: drag is impossible. CORRECT: drei handles it if both have `makeDefault`.
 
-**ContactShadows con `frames={Infinity}` di default** — WHY: renderizza ogni frame a vuoto. CORRECT: frames={1} o Infinity solo se la scena si muove davvero.
+**`ContactShadows` with `frames={Infinity}` by default** — WHY: renders every frame for nothing. CORRECT: `frames={1}`, or `Infinity` only if the scene actually moves.
 
-## Post-processing e color pipeline
+## Post-processing and color pipeline
 
-**`GammaCorrectionShader` come pass finale** — WHY: con `outputColorSpace = SRGBColorSpace` (r152+) è doppia gamma → colori slavati. CORRECT: `OutputPass` (r154+), o `<ToneMapping>` ultimo in pmndrs.
+**`GammaCorrectionShader` as the final pass** — WHY: with `outputColorSpace = SRGBColorSpace` (r152+) it is double gamma -> washed colors. CORRECT: `OutputPass` (r154+), or `<ToneMapping>` last in pmndrs.
 
-**AA prima degli effetti** — WHY: antialiasa aloni di bloom. CORRECT: MSAA del composer (`multisampling`) o SMAA **dopo** gli effetti.
+**AA before effects** — WHY: antialiases bloom halos. CORRECT: composer MSAA (`multisampling`) or SMAA **after** effects.
 
-**`renderer.render()` + `composer.render()` insieme** — WHY: doppio render per frame. CORRECT: solo composer.
+**`renderer.render()` + `composer.render()` together** — WHY: double render per frame. CORRECT: only the composer.
 
-**Bloom senza tone mapping / senza HalfFloatType** — WHY: HDR clampato, bloom invisibile o blown-out. CORRECT: `frameBufferType={HalfFloatType}`, ToneMapping ultimo.
+**Bloom without tone mapping / without HalfFloatType** — WHY: HDR clamped, bloom invisible or blown-out. CORRECT: `frameBufferType={HalfFloatType}`, ToneMapping last.
 
-**`composer.setSize` dimenticato nel resize** — WHY: blur/post sbagliati dopo resize. CORRECT: R3F lo gestisce; vanilla → resize handler che aggiorna composer + uniform FXAA + bloom resolution.
+**`composer.setSize` forgotten on resize** — WHY: wrong blur/post after resize. CORRECT: R3F handles it; vanilla -> resize handler that updates composer + FXAA uniform + bloom resolution.
 
-**Composer mai disposed** — WHY: leak di render target. CORRECT: dispose in cleanup.
+**Composer never disposed** — WHY: render-target leak. CORRECT: dispose in cleanup.
 
-**`logarithmicDepthBuffer` con post-processing** — WHY: incompatibile con depth-based pass (SSAO/DoF). CORRECT: near/far ratio stretto.
+**`logarithmicDepthBuffer` with post-processing** — WHY: incompatible with depth-based passes (SSAO/DoF). CORRECT: tight near/far ratio.
 
-## Materiali e texture
+## Materials and textures
 
-**`metalness > 0` senza environment map** — WHY: blob neri. CORRECT: `<Environment>` sempre prima dei materiali metallici.
+**`metalness > 0` without an environment map** — WHY: black blobs. CORRECT: `<Environment>` always before metallic materials.
 
-**sRGB su normal/roughness/metalness/AO map** — WHY: shading rotto. CORRECT: sRGB solo su albedo/emissive.
+**sRGB on normal/roughness/metalness/AO maps** — WHY: broken shading. CORRECT: sRGB only on albedo/emissive.
 
-**`geometry.setAttribute('uv2', ...)`** — WHY: morto da r151. CORRECT: `uv1`, o `texture.channel = 1` (r152+).
+**`geometry.setAttribute('uv2', ...)`** — WHY: dead since r151. CORRECT: `uv1`, or `texture.channel = 1` (r152+).
 
-**`material.needsUpdate = true` ogni frame** — WHY: ricompilazione shader continua. CORRECT: solo quando cambia un define; per uniform dinamiche `onBeforeCompile` + `userData.shader.uniforms`.
+**`material.needsUpdate = true` every frame** — WHY: continuous shader recompilation. CORRECT: only when a define changes; for dynamic uniforms use `onBeforeCompile` + `userData.shader.uniforms`.
 
-**`transparent` dove basta `alphaTest`** — WHY: sort issues, halo. CORRECT: `alphaTest: 0.5` per cutout.
+**`transparent` where `alphaTest` suffices** — WHY: sort issues, halos. CORRECT: `alphaTest: 0.5` for cutouts.
 
-**Importare `ContactShadows` da three/examples** — WHY: non esiste, è un componente drei. Errore visto in skill pubbliche: non propagarlo.
+**Importing `ContactShadows` from `three/examples`** — WHY: it does not exist, it is a drei component. Error seen in public skills: do not propagate it.
 
-## Performance e asset
+## Performance and assets
 
-**1000 mesh singole invece di instancing/batching** — WHY: draw call explosion. CORRECT: > 100 copie sempre InstancedMesh; > 10k con spatial subdivision o `BatchedMesh` (r159+); frustum culling su InstancedMesh opera sulla bounding sphere dell'intero gruppo → splittare per area.
+**1000 single meshes instead of instancing/batching** — WHY: draw-call explosion. CORRECT: > 100 copies always InstancedMesh; > 10k with spatial subdivision or `BatchedMesh` (r159+); frustum culling on InstancedMesh operates on the whole group's bounding sphere -> split by area.
 
-**GLB non compressi / Draco e Meshopt insieme** — WHY: peso ×5–10; KHR_draco e EXT_meshopt sono mutualmente esclusivi (anche via gltfpack). CORRECT: uno solo; pipeline in `model-optimization.md`.
+**Uncompressed GLB / Draco and Meshopt together** — WHY: 5-10x weight; KHR_draco and EXT_meshopt are mutually exclusive (even via gltfpack). CORRECT: pick one; pipeline in model-optimization.md.
 
-**DPR uncapped** — WHY: 4× pixel su retina per zero guadagno percepito. CORRECT: `dpr={[1, 1.5]}`, 2 solo tier high.
+**Uncapped DPR** — WHY: 4x pixels on retina for zero perceived gain. CORRECT: `dpr={[1, 1.5]}`, 2 only on high tier.
 
-**Shadow su PointLight su mobile** — WHY: costo ×6 per luce. CORRECT: fake contact shadow con gradient plane.
+**Shadows on PointLight on mobile** — WHY: 6x cost per light. CORRECT: fake contact shadow with a gradient plane.
 
-**`shadowMap.type` cambiato dopo il primo render** — WHY: non ha effetto / crash. CORRECT: deciso a monte.
+**`shadowMap.type` changed after the first render** — WHY: no effect / crash. CORRECT: decide up front.
 
-**Oggetti three.js nel persist di Zustand** — WHY: serializzazione impossibile, stato zombie. CORRECT: `partialize` solo preferenze (quality tier, muted, riduzione motion).
+**Three.js objects in Zustand `persist`** — WHY: impossible serialization, zombie state. CORRECT: `partialize` only preferences (quality tier, muted, motion reduction).
 
-## Fisica (Rapier)
+## Physics (Rapier)
 
-**`mesh.position.copy(body.translation())`** — WHY: Rapier ritorna plain `{x,y,z}`, `.copy()` fallisce silenziosamente o perde precisione. CORRECT: `.set(pos.x, pos.y, pos.z)` (o `useRapier` hooks).
+**`mesh.position.copy(body.translation())`** — WHY: Rapier returns a plain `{x,y,z}`, `.copy()` fails silently or loses precision. CORRECT: `.set(pos.x, pos.y, pos.z)` (or `useRapier` hooks).
 
-**`colliders="trimesh"` su corpi dinamici** — WHY: instabile e lentissimo. CORRECT: trimesh solo statici; dinamici concavi → `convexHull`.
+**`colliders="trimesh"` on dynamic bodies** — WHY: unstable and very slow. CORRECT: trimesh only for static bodies; dynamic concave -> `convexHull`.
 
-**WASM mai liberato** (raw rapier) — WHY: WASM non è GC-managed = leak certo. CORRECT: `world.free()` e `eventQueue.free()` in cleanup.
+**WASM never freed** (raw rapier) — WHY: WASM is not GC-managed = guaranteed leak. CORRECT: `world.free()` and `eventQueue.free()` in cleanup.
 
-## Diagnostica rendering: sintomo → causa → fix
+## Rendering diagnostics: symptom -> cause -> fix
 
-| Sintomo | Causa probabile | Fix |
+| Symptom | Likely cause | Fix |
 |---|---|---|
-| Schermo nero | envMap mancante su metal; camera dentro near plane; composer+renderer doppio render | Environment; near 0.1; solo composer |
-| Colori slavati/sbiaditi | doppia gamma; tone mapping mancante con luci fisiche | OutputPass; ToneMapping ultimo |
-| Z-fighting | piani coplanari | `polygonOffset`, offset 0.001, near/far stretto |
-| Trasparenza ordinata male | `transparent` su cutout | `alphaTest`; `depthWrite: false` consapevole |
-| Banding sulle normal map | ETC1S su normali | UASTC solo per normal map |
-| Bloom invisibile | threshold > emissive, o LDR buffer | HalfFloat, `toneMapped={false}` su emissive |
-| FPS crolla dopo minuti | leak: counters in crescita | audit dispose (12 slot texture) |
-| Shader nero dopo refactor | cache programma con `onBeforeCompile` | `material.customProgramCacheKey` |
+| Black screen | Missing envMap on metal; camera inside near plane; composer+renderer double render | Environment; near 0.1; composer only |
+| Washed/faded colors | Double gamma; missing tone mapping with physical lights | OutputPass; ToneMapping last |
+| Z-fighting | Coplanar planes | `polygonOffset`, offset 0.001, tight near/far |
+| Bad transparency sorting | `transparent` on cutouts | `alphaTest`; `depthWrite: false` consciously |
+| Banding on normal maps | ETC1S on normals | UASTC for normal maps only |
+| Invisible bloom | Threshold > emissive, or LDR buffer | HalfFloat, `toneMapped={false}` on emissive |
+| FPS drops after minutes | Leak: counters growing | Dispose audit (12-slot texture) |
+| Black shader after refactor | Program cache with `onBeforeCompile` | `material.customProgramCacheKey` |

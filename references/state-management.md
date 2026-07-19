@@ -1,16 +1,16 @@
-# State Management: il modello a 3 velocità
+# State management: the three-speed model
 
-Zustand coordina UI e scena. Non deve diventare il canale che aggiorna mesh a 60 FPS.
+Zustand coordinates UI and scene. It must not become the channel that updates meshes at 60 FPS.
 
-| Classe | Esempi | Dove vive | Frequenza |
+| Class | Examples | Where it lives | Frequency |
 |---|---|---|---|
-| Business state | Configurazione prodotto, permessi, workflow, dati API, selezione salvabile | Store dominio / server cache (TanStack Query) | Event-driven |
-| UI state | Modale aperta, pannello attivo, oggetto selezionato, camera preset | Zustand | Bassa/media |
-| Transient 3D state | Rotazioni, lerp, hover pointer, tempo, particelle, camera smoothing | `useRef`, `useFrame`, oggetti Three.js | Ogni frame |
+| Business state | Product configuration, permissions, workflow, API data, saveable selection | Domain store / server cache (TanStack Query) | Event-driven |
+| UI state | Open modal, active panel, selected object, camera preset | Zustand | Low/medium |
+| Transient 3D state | Rotations, lerps, pointer hover, time, particles, camera smoothing | `useRef`, `useFrame`, Three.js objects | Every frame |
 
-## Store per dominio (slice pattern)
+## Per-domain store (slice pattern)
 
-Niente `useAppStore` gigantesco: slice per bounded context, middleware applicati dove le slice si combinano.
+No giant `useAppStore`: one slice per bounded context, middleware applied where slices combine.
 
 ```ts
 // src/features/scene/store/types.ts
@@ -83,22 +83,22 @@ export const useAppStore = create<AppStore>()(
 )
 ```
 
-`persist` solo per preferenze ripristinabili: mai modelli Three.js, token, dati sensibili o valori transitori.
+`persist` is only for restorable preferences: never Three.js models, tokens, sensitive data or transient values.
 
-## Selettori stretti
+## Narrow selectors
 
 ```tsx
-// Bene: re-render solo se cambia il nodo selezionato
+// Good: re-render only when the selected node changes
 const selectedNodeId = useAppStore((s) => s.selectedNodeId)
 
-// Bene: azione, riferimento stabile
+// Good: action, stable reference
 const setSelectedNode = useAppStore((s) => s.setSelectedNode)
 
-// Vietato: iscrizione a tutto lo store
+// Forbidden: subscribing to the whole store
 const store = useAppStore()
 ```
 
-Per campi multipli, `useShallow` mantiene riferimento stabile:
+For multiple fields, `useShallow` keeps a stable reference:
 
 ```tsx
 import { useShallow } from 'zustand/react/shallow'
@@ -111,9 +111,9 @@ const { selectedNodeId, cameraPreset } = useAppStore(
 )
 ```
 
-## Bridge store-scena
+## Store-scene bridge
 
-La scena legge il target dallo store, interpola localmente, non scrive mai nello store a ogni frame:
+The scene reads the target from the store, interpolates locally, and never writes to the store on every frame:
 
 ```tsx
 import { useFrame } from '@react-three/fiber'
@@ -121,7 +121,7 @@ import { useRef } from 'react'
 import * as THREE from 'three'
 import { useAppStore } from '../store/app-store'
 
-const CAMERA_POSITIONS = {
+const CAMERA_POSITIONS: Record<CameraPreset, THREE.Vector3> = {
   overview: new THREE.Vector3(0, 2, 8),
   detail: new THREE.Vector3(2, 1, 3),
   presentation: new THREE.Vector3(0, 0.5, 5),
@@ -141,117 +141,28 @@ export function SceneCamera() {
 }
 ```
 
-Lo store cambia solo al cambio di preset; il moto avviene nel runtime R3F. È la forma corretta di collegare stato React a animazione continua.
+The store changes only on preset change; motion happens in the R3F runtime. This is the correct way to connect React state to continuous animation.
 
-## Accesso imperativo
+## Imperative access
 
-Per input ad alta frequenza (drag, controls, WebSocket, telemetry, scroll): API vanilla senza iscrivere React.
+For high-frequency input (drag, controls, WebSocket, telemetry, scroll): vanilla API without subscribing React.
 
 ```ts
-// Fuori da React o in callback ad alta frequenza
+// Outside React or in high-frequency callbacks
 useAppStore.getState().setSelectedNode(nodeId)
 
-// Reagire a un solo campo con subscribeWithSelector
-const unsubscribe = useAppStore.subscribe(
-  (state) => state.qualityTier,
-  (tier, previousTier) => {
-    if (tier !== previousTier) rendererPolicy.apply(tier)
-  },
+// React to one field with subscribeWithSelector
+useAppStore.subscribe(
+  (s) => s.selectedNodeId,
+  (id) => telemetry.track('select', { id }),
 )
-// Su teardown della feature/route: unsubscribe()
 ```
 
-Non usare questa tecnica per muovere 5.000 oggetti a frame: per quello c'è instancing.
+Use `transient` updates for ephemeral per-frame values (hover scale, press state): mutate refs directly, no store write, no re-render.
 
-## Store transient separato
+## Anti-corruption: what never goes in the store
 
-Per segnali rapidi condivisi tra hook, store vanilla non persistito, zero re-render React:
-
-```ts
-import { createStore } from 'zustand/vanilla'
-
-type RuntimeState = {
-  pointerNdc: { x: number; y: number }
-  isInteracting: boolean
-  setPointerNdc: (x: number, y: number) => void
-  setInteracting: (value: boolean) => void
-}
-
-export const runtimeStore = createStore<RuntimeState>((set) => ({
-  pointerNdc: { x: 0, y: 0 },
-  isInteracting: false,
-  setPointerNdc: (x, y) => set({ pointerNdc: { x, y } }),
-  setInteracting: (isInteracting) => set({ isInteracting }),
-}))
-```
-
-```tsx
-useFrame(() => {
-  const { pointerNdc, isInteracting } = runtimeStore.getState()
-  // aggiorna oggetti Three.js senza render React
-})
-```
-
-## Comandi, non mutazioni sparse
-
-Azioni semantiche che centralizzano regole e side effect, invece di `set()` da dieci componenti:
-
-```ts
-const createSceneSlice: StateCreator<AppStore, [], [], SceneSlice & SceneCommands> = (set) => ({
-  // ...state base
-  selectNode: (nodeId) =>
-    set(
-      { selectedNodeId: nodeId, hoveredNodeId: null, cameraPreset: 'detail' },
-      false,
-      'scene/selectNode',
-    ),
-  clearSelection: () =>
-    set({ selectedNodeId: null, cameraPreset: 'overview' }, false, 'scene/clearSelection'),
-  enterPresentationMode: () =>
-    set(
-      { selectedNodeId: null, hoveredNodeId: null, cameraPreset: 'presentation' },
-      false,
-      'scene/enterPresentationMode',
-    ),
-})
-```
-
-Transizioni tracciabili in DevTools, stati impossibili prevenuti (es. pannello dettaglio aperto senza nodo selezionato), test facili.
-
-## Persistenza e URL: la persistenza è un contratto
-
-| Tipo | Destinazione | Esempi |
-|---|---|---|
-| Stato condivisibile | URL/search params | ID configurazione, nodo selezionato, vista |
-| Preferenze personali | persist Zustand | Quality tier manuale, pannello aperto, camera preset |
-| Stato autorevole | Backend | Progetto, permessi, workflow, audit log |
-| Stato transiente | Ref / runtime store | Hover, drag, velocità, interpolazione |
-
-Mai in `localStorage`: permessi, ruoli, token, configurazioni contrattuali. Mai duplicare cache API in Zustand: server state a TanStack Query.
-
-## QualityGovernor
-
-```tsx
-export function QualityGovernor() {
-  const setQualityTier = useAppStore((s) => s.setQualityTier)
-  return (
-    <PerformanceMonitor
-      onDecline={() => setQualityTier('low')}
-      onIncline={() => setQualityTier('high')}
-      onFallback={() => setQualityTier('low')}
-    />
-  )
-}
-```
-
-La scena seleziona il tier e modifica davvero ciò che costa GPU (DPR, ombre, LOD, particelle, post-processing), non memorizza una label.
-
-## Regole operative
-
-- Una sorgente di verità per dato: la selection non sta contemporaneamente in component state, Zustand e URL senza protocollo di sync.
-- Lo store contiene intenti e target: `cameraPreset = "detail"`, non `camera.position.x` a frame.
-- Three.js possiede lo stato fisico istantaneo: posizione interpolata, quaternion, velocity, mixer time, buffer, raycast result.
-- Il backend possiede l'autorità: ruoli, configurazioni salvate, audit trail.
-- Azioni idempotenti e nominate: essenziali per debug, analytics, replay.
-- Unsubscribe obbligatorio nel teardown: ogni subscription imperativa, listener WS, observer di route.
-- Devtools solo in sviluppo: isola middleware e logging dal bundle di produzione.
+- Three.js objects, geometries, materials, textures — keep them in refs/module scope.
+- Per-frame numeric state — use refs.
+- Sensitive tokens or data — use TanStack Query / server cache.
+- Anything you would not serialize to `JSON.stringify` cleanly.

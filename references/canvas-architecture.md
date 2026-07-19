@@ -1,26 +1,26 @@
-# Canvas Architecture (R3F enterprise)
+# Canvas architecture (R3F enterprise)
 
-Il `<Canvas>` vive dietro un confine client-side, caricato lazy, con fallback 2D funzionale. La UI mission-critical (dati, form, CTA, navigazione) resta nel DOM.
+The `<Canvas>` lives behind a client-side boundary, loaded lazily, with a functional 2D fallback. Mission-critical UI (data, forms, CTAs, navigation) stays in the DOM.
 
-## Struttura progetto
+## Project structure
 
 ```
-app/                      # route Next.js
+app/                      # Next.js routes
 features/
-  product/                # UI business (DOM)
+  product/                # business UI (DOM)
   dashboard/
 three/
-  CanvasShell.tsx         # configurazione Canvas e capability
-  scenes/                 # una scena per route/use case
-  components/             # mesh, modelli, luci
-  systems/                # input, animazioni, quality policy
+  CanvasShell.tsx         # canvas config and capability detection
+  scenes/                 # one scene per route/use case
+  components/             # meshes, models, lights
+  systems/                # input, animation, quality policy
   assets/                 # GLB, KTX2, HDR
-  telemetry/              # fps, draw call, GPU/error reporting
+  telemetry/              # fps, draw calls, GPU/error reporting
 components/
-  ThreeFallback.tsx       # equivalente HTML/SVG/statico
+  ThreeFallback.tsx       # HTML/SVG/static equivalent
 ```
 
-Una scena per route/use case, lifecycle esplicito, asset ownership chiara. Mai un Canvas globale che accumula modelli, texture ed event listener tra navigazioni.
+One scene per route/use case, explicit lifecycle, clear asset ownership. Never a global Canvas that accumulates models, textures and event listeners across navigations.
 
 ## CanvasShell baseline
 
@@ -57,7 +57,7 @@ export function CanvasShell({ children }: { children: React.ReactNode }) {
 }
 ```
 
-`frameloop="demand"` evita render continui quando nulla si muove; per mutazioni imperative usa `invalidate()`. Eccezione: hero con animazione continua. In quel caso rendi solo mentre l'animazione è attiva, poi torna idle. Non sacrificare la UX per una pseudo-ottimizzazione.
+`frameloop="demand"` avoids continuous rendering when nothing moves; for imperative mutations call `invalidate()`. Exception: heroes with continuous animation. In that case render only while the animation is active, then go idle. Do not sacrifice UX for a pseudo-optimization.
 
 ## Lazy + fallback
 
@@ -73,16 +73,17 @@ const HeroScene = dynamic(() => import('@/three/scenes/HeroScene'), {
 })
 
 export function HeroSection() {
-  // Fallback anche per: no WebGL, prefers-reduced-motion, save-data
   const reduced = usePrefersReducedMotion()
   if (reduced) return <ThreeFallback />
   return <HeroScene />
 }
 ```
 
-## Stato e animazioni: il loop corretto
+The fallback branch must also cover: no WebGL support, `prefers-reduced-motion`, `save-data`.
 
-React orchestra struttura e stati lenti. `useFrame` aggiorna riferimenti Three.js in modo imperativo, indipendente dal frame rate:
+## State and animation: the correct loop
+
+React orchestrates structure and slow state. `useFrame` updates Three.js references imperatively, independent of frame rate:
 
 ```tsx
 import { useFrame } from '@react-three/fiber'
@@ -96,7 +97,6 @@ export function Orb({ active }: { active: boolean }) {
   useFrame((_, delta) => {
     if (!ref.current) return
     target.current.set(active ? 0.35 : 0, 0, 0)
-    // damping framerate-independent: identico a 30Hz e 144Hz
     ref.current.position.lerp(target.current, 1 - Math.exp(-8 * delta))
     ref.current.rotation.y += delta * 0.15
   })
@@ -110,20 +110,20 @@ export function Orb({ active }: { active: boolean }) {
 }
 ```
 
-Mai `setState()` in `useFrame`, in intervalli veloci o in `pointermove`: genera render React inutili. Usa ref, store con accesso non reattivo, e `delta` per velocità consistenti a refresh rate diversi.
+Never call `setState()` inside `useFrame`, in fast intervals or in `pointermove`: it triggers useless React renders. Use refs, non-reactive store access, and `delta` for consistent velocity across refresh rates.
 
-## Lifecycle e memoria
+## Lifecycle and memory
 
-Memoria GPU e WebGL context sono risorse di produzione:
+GPU memory and the WebGL context are production resources:
 
-- Oggetti creati manualmente (render target, geometrie, materiali, texture, post-processing, loader custom) vanno rilasciati con `.dispose()`. R3F gestisce le risorse dichiarative, non quelle imperative.
-- Non montare/smontare scene pesanti durante transizioni o step di wizard: mantienile montate, usa `visible`, pre-carica e riusa gli asset. Shader, materiali, luci e buffer richiedono compilazione.
-- Non creare `Vector3`, `Color`, materiali, geometrie o array in `useFrame`: riusa con `useRef`, `useMemo` o module scope per non premere sul GC.
-- Non abusare di `dispose={null}`: solo se hai stabilito che il modello è intenzionalmente condiviso e il lifecycle è gestito altrove.
+- Manually created objects (render targets, geometries, materials, textures, post-processing, custom loaders) must be released with `.dispose()`. R3F manages declarative resources, not imperative ones.
+- Do not mount/unmount heavy scenes during transitions or wizard steps: keep them mounted, use `visible`, pre-load and reuse assets. Shaders, materials, lights and buffers need compilation.
+- Do not allocate `Vector3`, `Color`, materials, geometries or arrays in `useFrame`: reuse via `useRef`, `useMemo` or module scope to avoid GC pressure.
+- Do not abuse `dispose={null}`: only when you have established the model is intentionally shared and the lifecycle is managed elsewhere.
 
-## Rendering adattivo
+## Adaptive rendering
 
-QualityPolicy esplicita, non `if` sparsi nella scena:
+An explicit QualityPolicy, not scattered `if`s across the scene:
 
 ```ts
 type QualityTier = 'low' | 'medium' | 'high'
@@ -143,15 +143,15 @@ export const QUALITY: Record<QualityTier, QualitySettings> = {
 }
 ```
 
-Durante interazione (drag, orbit, scroll) riduci temporaneamente DPR, ombre e post-processing: `useThree().performance.regress()`. Ma la chiamata da sola non cambia nulla: collega `performance.current` a decisioni di rendering reali.
+During interaction (drag, orbit, scroll) temporarily reduce DPR, shadows and post-processing via `useThree().performance.regress()`. The call alone changes nothing: wire `performance.current` to real rendering decisions.
 
-## Asset pipeline (sintesi)
+## Asset pipeline (summary)
 
-- glTF/GLB formato standard, ogni asset è un artefatto compilato, non un export "come viene".
-- Mesh pulite, UV, materiali PBR standard; elimina nodi/animazioni/materiali/texture inutilizzati.
-- Il collo di bottiglia è quasi sempre il numero di draw call, non i triangoli: riduci materiali e texture per modello.
-- LOD: low per primo paint, mid per uso normale, high solo su hardware idoneo.
-- Draco/Meshopt per geometrie, KTX2/Basis per texture. Pipeline: Blender -> `scripts/export_glb.py` -> gltf-transform -> validazione -> CDN.
-- `useGLTF` + gltfjsx per grafi JSX riusabili; R3F cachea per URL, quindi modelli condivisibili nell'albero.
-- `Suspense` annidato: prima fallback low quality, poi upgrade progressivo.
-- Oggetti ripetuti: `InstancedMesh` (o drei `<Merged>`/`<Instances>`), migliaia di istanze in una draw call.
+- glTF/GLB is the standard format; every asset is a compiled artifact, not an export "as is".
+- Clean meshes, UVs, standard PBR materials; strip unused nodes/animations/materials/textures.
+- The bottleneck is almost always draw-call count, not triangles: reduce materials and textures per model.
+- LOD: low for first paint, mid for normal use, high only on capable hardware.
+- Draco/Meshopt for geometry, KTX2/Basis for textures. Pipeline: Blender -> `scripts/export_glb.py` -> gltf-transform -> validate -> CDN.
+- `useGLTF` + gltfjsx for reusable JSX graphs; R3F caches by URL, so models are shareable across the tree.
+- Nested `Suspense`: low-quality fallback first, then progressive upgrade.
+- Repeated objects: `InstancedMesh` (or drei `<Merged>`/`<Instances>`), thousands of instances in one draw call.

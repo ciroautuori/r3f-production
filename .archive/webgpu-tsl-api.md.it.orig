@@ -1,10 +1,13 @@
+> **Fonte**: [Impertio-Studio/Three.js-Claude-Skill-Package](https://github.com/Impertio-Studio/Three.js-Claude-Skill-Package) - threejs-impl-webgpu/references/methods.md
+
+> **Errata (luglio 2026)**: importa TSL (compute, storage, nodi) sempre da three/tsl, non da three/webgpu; browser matrix corretta: Chrome/Edge 113+, Firefox 141+ Windows / 145+ macOS ARM, Safari 26+; da three r181 render()/compute() sono sincroni e le versioni *Async sono deprecate; entry point post-processing: pass(scene, camera) con renderOutput() come nodo finale.
+
 # API Signatures Reference (Three.js WebGPU)
 
-> **Source**: [Impertio-Studio/Three.js-Claude-Skill-Package](https://github.com/Impertio-Studio/Three.js-Claude-Skill-Package) — `threejs-impl-webgpu/references/methods.md`. Kept under MIT with attribution.
->
-> **Errata (July 2026)**: import TSL (`compute`, `storage`, nodes) always from `three/tsl`, not from `three/webgpu`; corrected browser matrix: Chrome/Edge 113+, Firefox 141+ Windows / 145+ macOS ARM, Safari 26+; since three r181 `render()`/`compute()` are synchronous and the `*Async` variants are deprecated; post-processing entry point is `pass(scene, camera)` with `renderOutput()` as the final node.
-
 ## WebGPURenderer
+
+```javascript
+import * as THREE from 'three/webgpu';
 
 const renderer = new THREE.WebGPURenderer({
   canvas: HTMLCanvasElement,        // optional, target canvas

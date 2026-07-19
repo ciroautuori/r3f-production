@@ -1,27 +1,27 @@
-# WebGPU + TSL — percorso strategico
+# WebGPU + TSL — strategic path
 
-WebGPU non è il default: è l'upgrade path quando WebGL2 diventa il collo di bottiglia. Regola della roadmap: **prima WebGL solido (tutto il resto di questa skill), poi WebGPU con fallback funzionante**.
+WebGPU is not the default: it is the upgrade path when WebGL2 becomes the bottleneck. Roadmap rule: **solid WebGL first (the rest of this skill), then WebGPU with a working fallback**.
 
-## Quando migrare (criteri concreti)
+## When to migrate (concrete criteria)
 
-- Oltre ~50.000 particelle o simulazioni compute (flocking, fluidi, cloth)
-- Scene draw-call-heavy dove il CPU overhead WebGL domina
-- Post-processing pesante (SSGI, SSR, TAA di qualità) a risoluzione piena
-- Gain atteso: 2–10× su workload compute; poco o nullo su scene semplici
+- More than ~50,000 particles or compute simulations (flocking, fluids, cloth)
+- Draw-call-heavy scenes where WebGL CPU overhead dominates
+- Heavy post-processing (SSGI, SSR, quality TAA) at full resolution
+- Expected gain: 2-10x on compute workloads; little or none on simple scenes
 
-Se nessun criterio è soddisfatto: resta su WebGL2, il costo di complessità non si ripaga.
+If no criterion is met: stay on WebGL2, the complexity cost does not pay back.
 
-## Supporto browser (luglio 2026, matrice corretta)
+## Browser support (July 2026, corrected matrix)
 
-Chrome/Edge 113+; Firefox 141+ (Windows) / 145+ (macOS ARM); Safari 26+ (da settembre 2025). Copertura sufficiente per adozione **con fallback**, mai senza. `forceWebGL: true` per testare il percorso di fallback in CI.
+Chrome/Edge 113+; Firefox 141+ (Windows) / 145+ (macOS ARM); Safari 26+ (since September 2025). Enough coverage for adoption **with fallback**, never without. Use `forceWebGL: true` to test the fallback path in CI.
 
-## Setup canonico
+## Canonical setup
 
 ```ts
 import * as THREE from 'three/webgpu';
 import { WebGPU } from 'three/webgpu';
 
-if (!WebGPU.isAvailable()) { /* fallback WebGLRenderer */ }
+if (!WebGPU.isAvailable()) { /* fall back to WebGLRenderer */ }
 const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: false });
 await renderer.init();
 ```
@@ -34,19 +34,19 @@ In R3F v9:
 
 ## Hard rules
 
-1. **Mai GLSL/ShaderMaterial con WebGPU**: solo TSL / NodeMaterial. GLSL su WebGPU non compila.
-2. **Mai EffectComposer**: post-processing via classe `PostProcessing` + nodi TSL (`pass(scene, camera)` entry, `renderOutput()` nodo finale).
-3. **Import TSL sempre da `three/tsl`** (`compute`, `storage`, `If`, `uniform`, nodi) — non da `three/webgpu`.
-4. **Mai `if` JS minuscolo in TSL**: sempre `If(cond, ...)`. Il JS è compile-time, TSL è il grafo GPU.
-5. **`setAnimationLoop`, mai rAF manuale** (in R3F: gestito dal Canvas).
-6. Da three **r181** `render()`/`compute()` sono sincroni; `renderAsync`/`computeAsync` deprecati. Prima di r181: `await computeAsync()` prima di ogni render dipendente.
+1. **Never GLSL/ShaderMaterial with WebGPU**: TSL / NodeMaterial only. GLSL does not compile on WebGPU.
+2. **Never EffectComposer**: post-processing via the `PostProcessing` class + TSL nodes (`pass(scene, camera)` entry, `renderOutput()` final node).
+3. **Import TSL always from `three/tsl`** (`compute`, `storage`, `If`, `uniform`, nodes) — not from `three/webgpu`.
+4. **Never a tiny JS `if` in TSL**: always `If(cond, ...)`. JS is compile-time, TSL is the GPU graph.
+5. **`setAnimationLoop`, never manual rAF** (in R3F: handled by the Canvas).
+6. Since three **r181** `render()`/`compute()` are synchronous; `renderAsync`/`computeAsync` are deprecated. Before r181: `await computeAsync()` before any dependent render.
 
-## TSL essenziale
+## Essential TSL
 
-NodeMaterial inputs: `colorNode`, `positionNode`, `normalNode`, `emissiveNode`, `castShadowNode`, `dispersionNode`, `transmissionNode`, `anisotropyNode`... Type system chainable, `uniform().onFrameUpdate(fn)`, `toVar/toConst/varying/vertexStage`, `hash/range` per random deterministico, atomics e workgroup barrier per compute (`instancedArray`, `storageTexture`, `workgroupArray` — shared memory 10–100× più veloce). Tabella completa dei metodi e dei nodi: `webgpu-tsl-api.md`.
+NodeMaterial inputs: `colorNode`, `positionNode`, `normalNode`, `emissiveNode`, `castShadowNode`, `dispersionNode`, `transmissionNode`, `anisotropyNode`... Chainable type system, `uniform().onFrameUpdate(fn)`, `toVar/toConst/varying/vertexStage`, `hash/range` for deterministic random, atomics and workgroup barrier for compute (`instancedArray`, `storageTexture`, `workgroupArray` — shared memory 10-100x faster). Full method and node table: `webgpu-tsl-api.md`.
 
-Post-processing TSL (firme): `bloom(node, strength, radius, threshold)`, `dof(node, viewZ, focusDistance, focalLength, bokehScale)`, `ssr`, `ssgi`, `traa`, `lut3D` — 25 effetti totali, vedi `webgpu-tsl-api.md` e emalorenzo `tsl-post-processing` (in `sources/`).
+TSL post-processing (signatures): `bloom(node, strength, radius, threshold)`, `dof(node, viewZ, focusDistance, focalLength, bokehScale)`, `ssr`, `ssgi`, `traa`, `lut3D` — 25 effects total; see `webgpu-tsl-api.md`.
 
-## Migrazione incrementale
+## Incremental migration
 
-Non riscrivere: una scena per volta, dietro feature flag. Renderer scelto a runtime (WebGPU → WebGL2 fallback), materiali TSL scritti in modo da degradare a NodeMaterial WebGL2 dove possibile. Breaking changes r170→r183 (PCFSoftShadowMap deprecato su WebGLRenderer in r182 → PCFShadowMap; `colorBufferType` → `outputBufferType` su WebGPU; TSL `PI2` → `TWO_PI`; PBR indirect specular r181 più luminoso → ridurre shadow bias in r183): checklist completa in `three-migration-r170-r183.md`.
+Do not rewrite: one scene at a time, behind a feature flag. Renderer chosen at runtime (WebGPU -> WebGL2 fallback), TSL materials written to degrade to WebGL2 NodeMaterial where possible. Breaking changes r170->r183 (PCFSoftShadowMap deprecated on WebGLRenderer in r182 -> PCFShadowMap; `colorBufferType` -> `outputBufferType` on WebGPU; TSL `PI2` -> `TWO_PI`; PBR indirect specular brighter in r181 -> reduce shadow bias in r183): full checklist in `three-migration-r170-r183.md`.

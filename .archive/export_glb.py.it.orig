@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-export_glb.py — headless Blender -> optimized GLB exporter.
+export_glb.py — headless Blender → optimized GLB exporter.
 
 Runs Blender in `--background` mode, opens a `.blend` file, applies clean-up
 (transforms, recompute normals, single shape per mesh), and exports a
@@ -18,7 +18,7 @@ Flags:
     --meshopt             post-process with `gltf-transform meshopt`
     --collection NAME     export only objects in the given Blender collection
     --apply-transforms    apply location/rotation/scale before export (default: ON)
-    --recalc-normals      Mesh -> Normals -> Recalculate Outside (default: ON)
+    --recalc-normals      Mesh → Normals → Recalculate Outside (default: ON)
     --blender PATH        path to Blender executable (default: auto-detect)
     --quiet               suppress Blender's stdout
 
@@ -204,7 +204,7 @@ def run_meshopt(input_glb: Path) -> None:
         subprocess.run([cli, "meshopt", str(input_glb), str(tmp)], check=True)
         shutil.move(tmp, input_glb)
         after = input_glb.stat().st_size
-        ok(f"meshopt: {before} -> {after} bytes ({(1 - after/before) * 100:.1f}% smaller)")
+        ok(f"meshopt: {before} → {after} bytes ({(1 - after/before) * 100:.1f}% smaller)")
     except subprocess.CalledProcessError as e:
         err(f"meshopt failed: {e}")
         if tmp.exists():
@@ -212,8 +212,8 @@ def run_meshopt(input_glb: Path) -> None:
 
 
 def export_one(blender: str, blend_path: Path, output: Path, args: argparse.Namespace) -> bool:
-    """Export a single .blend -> .glb. Returns True on success."""
-    info(f"export {blend_path.name} -> {output}")
+    """Export a single .blend → .glb. Returns True on success."""
+    info(f"export {blend_path.name} → {output}")
 
     # Write the script to a temp file because --python-text gets unwieldy with quoting
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as f:

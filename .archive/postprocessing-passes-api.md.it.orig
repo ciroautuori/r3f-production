@@ -1,8 +1,13 @@
-# Post-processing pass API — vanilla Three.js reference
+> **Fonte**: [Impertio-Studio/Three.js-Claude-Skill-Package](https://github.com/Impertio-Studio/Three.js-Claude-Skill-Package) - threejs-impl-post-processing/references/methods.md
 
-> **Source**: [Impertio-Studio/Three.js-Claude-Skill-Package](https://github.com/Impertio-Studio/Three.js-Claude-Skill-Package) — `threejs-impl-post-processing/references/methods.md`. Kept under MIT with attribution.
->
-> **Note**: since three r154+ the final pass is `OutputPass` (never `GammaCorrectionShader`); in R3F v9 use `@react-three/postprocessing` (pmndrs) — these vanilla signatures remain the baseline API reference.
+> **Nota**: con three r154+ il pass finale e OutputPass (mai GammaCorrectionShader); in R3F v9 usa @react-three/postprocessing (pmndrs) - queste signature vanilla restano il riferimento API di base.
+
+# methods.md -- threejs-impl-post-processing
+
+> Complete API signatures for Three.js post-processing classes.
+> All imports from `three/addons/postprocessing/` unless otherwise noted.
+
+---
 
 ## EffectComposer
 

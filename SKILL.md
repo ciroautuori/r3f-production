@@ -1,134 +1,133 @@
 ---
-name: r3f-production
-description: Build production-grade 3D web experiences with React Three Fiber, Three.js, Zustand and Next.js, enterprise standard. Progressive enhancement, GPU budgets, DOM-first accessible UX, cinematic polish (ACES, HDRI, bloom, grain). Usa quando l'utente chiede una scena 3D, hero WebGL, configuratore prodotto 3D, scroll-driven 3D, sito "Awwwards-style" ma production, R3F, useFrame, drei, quality tier adattivo, ottimizzazione draw call, GLB/Draco/KTX2, o menziona Three.js in un progetto React/Next.js. Also triggers on "3D landing", "WebGL hero", "interactive product showcase", "scroll storytelling", "cinematic web experience". NON usare per: dashboard CRUD senza 3D, siti statici senza WebGL, landing dove un'immagine basta (3D decorativo = conversione persa), deliverable single-file HTML vanilla.
+name: three-governance
+description: Production-grade governance for 3D web on React Three Fiber + Three.js + Zustand + Next.js. Treats the 3D canvas as a runtime GPU with explicit performance, accessibility and quality budgets, then enforces them in audit. Use when the user asks for a 3D scene, WebGL hero, 3D product configurator, scroll-driven 3D, a "production Awwwards-style" site, R3F, useFrame, drei, adaptive quality tiers, draw-call optimization, GLB/Draco/KTX2, or mentions Three.js in a React/Next.js project. Also triggers on "3D landing", "WebGL hero", "interactive product showcase", "scroll storytelling", "cinematic web experience", "WebGPU/TSL migration". Do NOT use for: CRUD dashboards without 3D, static sites without WebGL, landing pages where a single image suffices (decorative 3D costs conversion on B2B funnels), or single-file vanilla HTML deliverables.
 license: MIT
 ---
 
-# R3F Production: 3D web enterprise-grade
+# three-governance — production 3D web, audited
 
-Due anime, un solo standard: la disciplina enterprise (3d-tips, 3d-zustand) e il craft cinematografico della scuola Awwwards (Active Theory, Lusion, 14islands). Il 3D è un **runtime GPU con budget di prestazioni**, non una libreria per animazioni decorative. La regola chiave: **3D progressivo, osservabile, accessibile, sempre sostituibile da un fallback 2D**.
+A 3D scene is a runtime with a GPU budget, not a decorative animation library. The non-negotiable contract: 3D must be **progressive, observable, accessible, and always replaceable by a 2D fallback**. This skill turns that contract into concrete steps, hard rules, and an audit scorecard.
 
-## Filosofia (leggere prima del codice)
+The standard fuses two lineages: the enterprise discipline of explicit budgets, deterministic state and lifecycle hygiene, and the cinematic craft of award-winning studios (Active Theory, Lusion, 14islands). Both already converged on the same conclusion: **measure, then polish**.
 
-1. **Il DOM vince.** Dati, form, CTA, navigazione, tabelle: tutto nel DOM. Il `<Canvas>` è isolato, client-only, lazy. Una homepage interamente WebGL impoverisce SEO, accessibilità, conversione e mantenibilità.
-2. **Aesthetics > Geometry.** Un icosaedro con HDRI, ACESFilmic e bloom batte un modello da 200k triangoli illuminato male. Budget su lighting e post-processing prima, geometria dopo.
-3. **Lerp everything.** Nessun valore cambia istantaneamente: camera, rotazioni, hover, progress. Damping framerate-independent: `factor = 1 - Math.exp(-lambda * delta)`.
-4. **Budget GPU espliciti.** Ogni esperienza dichiara draw call, triangoli, texture, DPR max. Enforced in QA, non lasciati al caso.
-5. **Stato a 3 velocità.** Business state nel server/cache, UI state in Zustand, transient per-frame nei ref. Mai stato reattivo a 60 FPS.
-6. **Accessibilità non negoziabile.** `prefers-reduced-motion` rispettato, ogni funzione critica ha equivalente DOM, il canvas si mette in pausa fuori viewport.
+## Philosophy (read before code)
 
-## Stack SOTA July 2026
+1. **DOM wins.** Data, forms, CTAs, navigation, tables: all in the DOM. The `<Canvas>` is isolated, client-only, lazy. A fully-WebGL homepage hurts SEO, accessibility, conversion and maintainability.
+2. **Aesthetics over geometry.** An icosahedron with HDRI, ACESFilmic and bloom beats a 200k-triangle model lit wrong. Budget for lighting and post-processing first, geometry second.
+3. **Lerp everything.** No value changes instantly: camera, rotation, hover, progress. Framerate-independent damping: `factor = 1 - Math.exp(-lambda * delta)`.
+4. **Explicit GPU budgets.** Every experience declares draw calls, triangles, textures and max DPR. Enforced in QA, never left to chance.
+5. **State at three speeds.** Business state in server/cache, UI state in Zustand, transient per-frame state in refs. Never reactive state at 60 FPS.
+6. **Accessibility is non-negotiable.** `prefers-reduced-motion` honored, every critical function has a DOM equivalent, the canvas pauses off-viewport.
+
+## SOTA stack (July 2026)
 
 ```
 Next.js App Router + TypeScript (strict)
-@react-three/fiber v9 + @react-three/drei + three (pin in package.json, mai CDN)
-zustand (UI state) + TanStack Query (server state). MAI Redux.
+@react-three/fiber v9 + @react-three/drei + three (pin in package.json, never CDN)
+zustand (UI state) + TanStack Query (server state). NEVER Redux.
 @react-three/postprocessing (EffectComposer, Bloom, Vignette, Noise)
 gltf-transform / gltfjsx / Draco / KTX2-Basis (asset pipeline)
-GSAP + ScrollTrigger + Lenis: SOLO per scroll choreography (motion DOM: framer-motion)
-WebGPU renderer + TSL: strategic watch, adottare solo con fallback WebGL solido
+GSAP + ScrollTrigger + Lenis: ONLY for scroll choreography (DOM motion: framer-motion)
+WebGPU renderer + TSL: strategic watch, adopt only with a solid WebGL fallback
 ```
 
-Note di versione: R3F v9 applica di default `ACESFilmicToneMapping` e output sRGB. Non toccarli: è il look "non-WebGL" gratis. `dispersion` su `MeshPhysicalMaterial` richiede three >= r167. Pin esatti nel `package.json` del progetto, mai upgrade silenziosi.
+Version notes: R3F v9 applies `ACESFilmicToneMapping` and sRGB output by default. Do not override them — it is the "non-WebGL look" for free. `dispersion` on `MeshPhysicalMaterial` requires three >= r167. Pin exact versions in the project `package.json`; never silent upgrades.
 
-## Workflow in 6 step (saltare uno step = output da tech demo)
+## 6-step workflow (skipping a step produces a tech demo)
 
-### Step 1: Archetipo esperienza
+### Step 1 — Experience archetype
 
-Ogni 3D site production rientra in uno di questi. Sceglierne uno e commettere:
+Pick one archetype and commit:
 
-| Archetipo | Pattern | Uso enterprise |
+| Archetype | Pattern | Enterprise use |
 |---|---|---|
-| Object showcase | Hero object, camera orbita/zoom su scroll | Product page, configuratore |
-| Room walkthrough | Camera path su spline in interno | Real estate, hospitality |
-| Vertical descent | Scroll = discesa tra layer | Case study, storytelling |
-| Flyover | Camera traversa landscape | Yacht/travel experience |
-| Particle field | Points reattivi a scroll/mouse | Hero atmosferica, brand |
+| Object showcase | Hero object, camera orbit/zoom on scroll | Product page, configurator |
+| Room walkthrough | Camera path on spline through interior | Real estate, hospitality |
+| Vertical descent | Scroll = descent through layers | Case study, storytelling |
+| Flyover | Camera traverses a landscape | Yacht/travel experience |
+| Particle field | Points react to scroll/mouse | Atmospheric hero, brand |
 
-Se l'utente non l'ha detto, chiedere quale archetipo. Non inventarne di nuovi.
+If the user did not specify, ask which one. Do not invent new archetypes.
 
-### Step 2: Architettura Canvas
+### Step 2 — Canvas architecture
 
-Leggere `references/canvas-architecture.md`: CanvasShell con DPR adattivo, `frameloop="demand"` per scene passive, lazy loading, fallback 2D, lifecycle e dispose, struttura directory `three/` separata da `features/`.
+Read `references/canvas-architecture.md`: CanvasShell with adaptive DPR, `frameloop="demand"` for passive scenes, lazy loading, 2D fallback, lifecycle and dispose, `three/` directory separated from `features/`.
 
-### Step 3: Asset pipeline
+### Step 3 — Asset pipeline
 
-GLB come artefatto compilato: Blender -> `scripts/export_glb.py` (Draco) -> gltf-transform (KTX2) -> validazione -> CDN. LOD low/mid/high, `useGLTF` + gltfjsx per grafi JSX, `Suspense` annidato per caricamento progressivo. Dettagli in `references/BLENDER_PIPELINE.md` e `references/PROCEDURAL_GEOMETRY.md` (code-only geometry: default prima di generatori AI).
+GLB is a compiled artifact: Blender -> `scripts/export_glb.py` (Draco) -> gltf-transform (KTX2) -> validate -> CDN. Low/mid/high LOD, `useGLTF` + gltfjsx for JSX graphs, nested `Suspense` for progressive loading. Details in `references/blender-pipeline.md` and `references/procedural-geometry.md` (code-only geometry is the default before AI generators).
 
-### Step 4: Polish chain (in questo ordine)
+### Step 4 — Polish chain (in this order)
 
-Leggere `references/polish-chain.md`. L'ordine conta:
+Read `references/polish-chain.md`. Order matters:
 
-1. HDRI come `scene.environment` (`<Environment>` di drei)
-2. Lighting: una DirectionalLight per direzione ombra anche con HDRI
-3. Post-processing: `@react-three/postprocessing` (Bloom -> Vignette -> Noise/grain ultimo)
-4. Materiali hero: `meshPhysicalMaterial` con transmission + dispersion per vetro
-5. Scroll timeline: GSAP ScrollTrigger + Lenis, Lenis possiede lo scroll
-6. Custom cursor (opzionale, signature premium)
-7. Film grain come layer composito finale, intensità ~0.05
+1. HDRI as `scene.environment` (drei `<Environment>`)
+2. Lighting: one `DirectionalLight` per shadow direction even with HDRI
+3. Post-processing: `@react-three/postprocessing` (Bloom -> Vignette -> Noise/grain last)
+4. Hero materials: `meshPhysicalMaterial` with transmission + dispersion for glass
+5. Scroll timeline: GSAP ScrollTrigger + Lenis, Lenis owns the scroll
+6. Custom cursor (optional, premium signature)
+7. Film grain as the final composite layer, intensity ~0.05
 
-### Step 5: Stato
+### Step 5 — State
 
-Leggere `references/state-management.md`: modello a 3 velocità, slice per bounded context, selettori stretti con `useShallow`, bridge store-scena (lo store contiene intenti/target, Three.js possiede lo stato fisico), store vanilla per segnali rapidi, comandi semantici nominati.
+Read `references/state-management.md`: three-speed model, slice per bounded context, narrow selectors with `useShallow`, store-scene bridge (the store holds intents/targets, Three.js owns the physical state), vanilla store for fast signals, named semantic commands.
 
-### Step 6: Audit
+### Step 6 — Audit
 
-Leggere `references/quality-governance.md`. Prima di dichiarare fatto:
+Read `references/quality-governance.md`. Before declaring done:
 
 - Lighthouse Performance >= 85 desktop, >= 70 mobile; FCP < 1.8s, LCP < 2.5s
-- 60fps desktop, 30fps floor su Android medio; DPR cappato
-- Budget draw call/triangoli rispettato (tabella in quality-governance)
-- GLB Draco-compressi, texture KTX2 dove possibile
-- Zero allocazioni in `useFrame`, zero `setState` nel loop
-- `prefers-reduced-motion` testato, fallback 2D verificato
-- Test reale: mobile Safari, Android Chrome medio, laptop GPU integrata, desktop high-DPI
+- 60fps desktop, 30fps floor on mid Android; DPR capped
+- Draw call / triangle budget respected (table in quality-governance)
+- GLB Draco-compressed, textures KTX2 where possible
+- Zero allocations in `useFrame`, zero `setState` in the loop
+- `prefers-reduced-motion` tested, 2D fallback verified
+- Real devices tested: mobile Safari, mid Android Chrome, integrated-GPU laptop, high-DPI desktop
 
-## Hard Rules: mai fare queste cose
+## Hard rules — never do these
 
 Long form in `references/anti-patterns.md`.
 
-1. **Niente `setState` o store update in `useFrame`.** Ref + mutation + `delta`.
-2. **Niente allocazioni per frame** (`new Vector3()`, array, materiali nel loop). Riusare via ref/useMemo/module scope.
-3. **Niente `metalness > 0` senza environment map.** Risultato: blob neri.
-4. **Niente DPR uncapped.** `dpr={[1, 1.5]}` baseline, 2 solo tier high.
-5. **Niente GLB non compressi.** Draco o Meshopt obbligatori.
-6. **Niente OrbitControls in produzione.** Camera scroll-driven o rig driven.
-7. **Niente animazioni frame-count.** Solo `delta` time; a 144Hz e 30Hz il moto deve essere identico.
-8. **Niente mix CSS scroll + JS scroll.** Lenis possiede lo scroll, ScrollTrigger legge da Lenis, `scroll-behavior: smooth` rimosso.
-9. **Niente raycast su tutta la scena per frame.** Array piccolo di mesh interagibili.
-10. **Niente mount/unmount di scene pesanti in transizione.** `visible` + riuso asset.
-11. **Niente oggetti Three.js nel persist Zustand.** Persisti solo preferenze ripristinabili.
-12. **Niente audio autoplay.** Gate su gesto utente, mute persistente, OFF default mobile.
-13. **Niente 3D dove un'immagine basta.** Il 3D decorativo su funnel B2B costa conversione e non aggiunge fiducia.
+1. No `setState` or store update in `useFrame`. Ref + mutation + `delta`.
+2. No per-frame allocations (`new Vector3()`, arrays, materials in the loop). Reuse via ref/useMemo/module scope.
+3. No `metalness > 0` without an environment map. Result: black blobs.
+4. No uncapped DPR. `dpr={[1, 1.5]}` baseline, 2 only on high tier.
+5. No uncompressed GLB. Draco or Meshopt mandatory.
+6. No `OrbitControls` in production. Camera scroll-driven or rig driven.
+7. No frame-count animations. Only `delta` time; at 144Hz and 30Hz motion must be identical.
+8. No CSS scroll + JS scroll mix. Lenis owns the scroll, ScrollTrigger reads from Lenis, `scroll-behavior: smooth` removed.
+9. No per-frame raycast over the whole scene. Small array of interactable meshes.
+10. No mount/unmount of heavy scenes in transitions. `visible` + asset reuse.
+11. No Three.js objects in persisted Zustand. Persist only restorable preferences.
+12. No autoplay audio. Gate on user gesture, persistent mute, OFF by default on mobile.
+13. No 3D where an image suffices. Decorative 3D on B2B funnels costs conversion and adds no trust.
 
-## Reference files (caricare on demand, non tutti insieme)
+## Reference files (load on demand, not all at once)
 
-Core (scritti per questa skill, standard enterprise):
-- `references/canvas-architecture.md`: CanvasShell, quality adattivo, lifecycle, fallback, struttura progetto
-- `references/state-management.md`: modello 3 velocità, slice Zustand, bridge scena, runtime store
-- `references/polish-chain.md`: lighting fisico, HDRI/Lightformer, ACES/AgX/Neutral, post chain pmndrs, materiali hero, motion (Lenis+ScrollTrigger, spring, stagger), type/palette, audio
-- `references/quality-governance.md`: budget GPU, soglie renderer.info, core web vitals, profili quality, telemetria, context loss, scorecard audit 88/100
-- `references/anti-patterns.md`: WRONG/WHY/CORRECT merged + tabella diagnostica rendering sintomo→causa→fix
-- `references/performance-diagnosis.md`: flowchart diagnostico, decision tree instancing/BatchedMesh, leve in ordine costo/beneficio, raycasting
-- `references/model-optimization.md`: pipeline GLB 5 stadi, ordine gltf-transform, Draco XOR Meshopt, ETC1S/UASTC, LOD chain, budget file
-- `references/physics-rapier.md`: decision tree motori, setup @react-three/rapier, gotcha sync/WASM/trimesh
-- `references/webgpu-tsl.md`: quando migrare, browser matrix luglio 2026, setup R3F, hard rules TSL
+Core (written for this skill, enterprise standard):
+- `references/canvas-architecture.md` — CanvasShell, adaptive quality, lifecycle, fallback, project structure
+- `references/state-management.md` — three-speed model, Zustand slices, scene bridge, runtime store
+- `references/polish-chain.md` — physical lighting, HDRI/Lightformer, ACES/AgX/Neutral, pmndrs post chain, hero materials, motion (Lenis+ScrollTrigger, spring, stagger), type/palette, audio
+- `references/quality-governance.md` — GPU budgets, renderer.info thresholds, Core Web Vitals, quality profiles, telemetry, context loss, 88/100 audit scorecard
+- `references/anti-patterns.md` — WRONG/WHY/CORRECT merged + symptom -> cause -> fix diagnostic table
+- `references/performance-diagnosis.md` — diagnostic flowchart, instancing/BatchedMesh decision tree, cost/benefit levers in order, raycasting
 
-Asset e shader (da awwwards-3d, MIT):
-- `references/PROCEDURAL_GEOMETRY.md`: geometria code-only (primitives, displacement, math shapes)
-- `references/SHADERS.md`: building block GLSL + appendice onBeforeCompile production (cache key, dissolve edge glow)
-- `references/BLENDER_PIPELINE.md`: ricette Blender + export GLB ottimizzato
-- `scripts/export_glb.py`: export headless Blender -> GLB Draco (+ flag `--meshopt`)
+Asset and shader (MIT, derived from public awwwards-3d references):
+- `references/procedural-geometry.md` — code-only geometry (primitives, displacement, math shapes)
+- `references/shaders.md` — GLSL building blocks + production `onBeforeCompile` appendix (cache key, dissolve edge glow)
+- `references/blender-pipeline.md` — Blender recipes + optimized GLB export
+- `scripts/export_glb.py` — headless Blender -> Draco GLB export (+ `--meshopt` flag)
 
-Vendor (copiati con attribuzione + errata header, API reference):
-- `references/webgpu-tsl-api.md`: tabella completa nodi TSL/NodeMaterial (impertio, errata: import da three/tsl, r181 sync)
-- `references/postprocessing-passes-api.md`: signature 27+ pass vanilla (impertio, nota: OutputPass mai GammaCorrectionShader)
-- `references/three-migration-r170-r183.md`: breaking changes r170→r183 (emalorenzo)
+Vendor API reference (kept with attribution + errata headers, see CREDITS.md):
+- `references/webgpu-tsl-api.md` — full TSL/NodeMaterial table (errata: import from `three/tsl`, r181 sync)
+- `references/postprocessing-passes-api.md` — 27+ vanilla pass signatures (note: OutputPass, never GammaCorrectionShader)
+- `references/three-migration-r170-r183.md` — r170 -> r183 breaking changes
 
-## Quando sei bloccato
+## When stuck
 
-- Materiale piatto o nero: HDRI mancante. Step 4, punto 1.
-- Performance pessima: taglia pass di post-processing prima della geometria. quality-governance.md.
-- Scroll janky: Lenis non wired a ScrollTrigger. polish-chain.md.
-- Re-render continui: stato nel posto sbagliato. state-management.md, tabella 3 velocità.
-- "Funziona ma non sembra premium": hai saltato Step 4. Torna indietro e applica in ordine.
+- Flat or black material: missing HDRI. Step 4, item 1.
+- Bad performance: cut post-processing passes before geometry. quality-governance.md.
+- Janky scroll: Lenis not wired to ScrollTrigger. polish-chain.md.
+- Continuous re-renders: state in the wrong place. state-management.md, three-speed table.
+- "Works but does not feel premium": you skipped Step 4. Go back and apply in order.
