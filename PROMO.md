@@ -1,4 +1,4 @@
-# Growth & launch plan — three-governance
+# Growth & launch plan — r3f-production
 
 Goal: ship a useful, well-attributed, MIT-licensed Codex/Claude skill for
 production-grade React Three Fiber governance, and grow it organically from 0
@@ -37,7 +37,7 @@ to its first 100-500 stars. No astroturfing, no spam, no bought stars.
 
 ## 3. GitHub repo setup checklist
 
-1. Create `ciroautuori/three-governance` on GitHub (public, MIT).
+1. Create `ciroautuori/r3f-production` on GitHub (public, MIT).
 2. Topics (limit 20):
    `react-three-fiber`, `threejs`, `r3f`, `webgl`, `3d-web`, `codex-skill`,
    `claude-skill`, `agent-skill`, `skill`, `performance`, `accessibility`,

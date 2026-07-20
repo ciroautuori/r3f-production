@@ -1,4 +1,4 @@
-# Contributing to three-governance
+# Contributing to r3f-production
 
 Thanks for considering a contribution. This skill is opinionated on purpose:
 the goal is production-grade governance, not a grab-bag of techniques. Keep

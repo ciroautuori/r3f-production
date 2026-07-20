@@ -1,10 +1,10 @@
 ---
-name: three-governance
+name: r3f-production
 description: Production-grade governance for 3D web on React Three Fiber + Three.js + Zustand + Next.js. Treats the 3D canvas as a runtime GPU with explicit performance, accessibility and quality budgets, then enforces them in audit. Use when the user asks for a 3D scene, WebGL hero, 3D product configurator, scroll-driven 3D, a "production Awwwards-style" site, R3F, useFrame, drei, adaptive quality tiers, draw-call optimization, GLB/Draco/KTX2, or mentions Three.js in a React/Next.js project. Also triggers on "3D landing", "WebGL hero", "interactive product showcase", "scroll storytelling", "cinematic web experience", "WebGPU/TSL migration". Do NOT use for: CRUD dashboards without 3D, static sites without WebGL, landing pages where a single image suffices (decorative 3D costs conversion on B2B funnels), or single-file vanilla HTML deliverables.
 license: MIT
 ---
 
-# three-governance — production 3D web, audited
+# r3f-production — production 3D web, audited
 
 A 3D scene is a runtime with a GPU budget, not a decorative animation library. The non-negotiable contract: 3D must be **progressive, observable, accessible, and always replaceable by a 2D fallback**. This skill turns that contract into concrete steps, hard rules, and an audit scorecard.
 

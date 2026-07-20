@@ -1,14 +1,14 @@
-# three-governance
+# r3f-production
 
 > Production-grade governance for 3D web on **React Three Fiber + Three.js + Zustand + Next.js**. Treat the 3D canvas as a runtime GPU with explicit performance, accessibility and quality budgets — then audit them.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Skill](https://img.shields.io/badge/Codex%20Skill-three--gov-orange.svg)](./SKILL.md)
+[![Skill](https://img.shields.io/badge/Codex%20Skill-r3f--production-orange.svg)](./SKILL.md)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 A 3D scene is a runtime with a GPU budget, not a decorative animation library.
 The non-negotiable contract: 3D must be **progressive, observable, accessible,
-and always replaceable by a 2D fallback**. `three-governance` turns that
+and always replaceable by a 2D fallback**. `r3f-production` turns that
 contract into concrete steps, hard rules, and an audit scorecard.
 
 ## Why this exists
@@ -42,10 +42,10 @@ so the rules are applied where the code is written, not in a separate wiki.
 Copy (or symlink) this folder into your skills directory, e.g. for Codex CLI:
 
 ```sh
-git clone https://github.com/ciroautuori/three-governance.git ~/.codex/skills/three-governance
+git clone https://github.com/ciroautuori/r3f-production.git ~/.codex/skills/r3f-production
 ```
 
-Then reference it by name `three-governance` from your agent. See `SKILL.md`
+Then reference it by name `r3f-production` from your agent. See `SKILL.md`
 for the frontmatter and trigger description.
 
 ## Contents
