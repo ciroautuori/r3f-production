@@ -22,7 +22,7 @@ jobs:
     runs-on: [self-hosted, eros, python]
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Python version
         run: python3 --version
       - name: Compile export_glb.py
@@ -45,7 +45,7 @@ jobs:
       run:
         working-directory: examples/nextjs-hero
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Tool versions
         run: |
           node --version
