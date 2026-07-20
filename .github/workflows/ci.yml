@@ -7,11 +7,15 @@ on:
     branches: [main]
 
 # Keep jobs independent and cancellable so a new push on the same branch does
-# not burn minutes on stale runs.
+# not burn resources on stale runs.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Self-hosted on Soliso (label `eros`): jobs run on our own hardware with zero
+# per-minute Actions billing. Python 3.14 + Node 26 are on PATH from the host
+# (Arch), so we do NOT use actions/setup-python / setup-node here — they would
+# try to download a prebuilt toolchain catalog that has no Arch entry.
 jobs:
   verify:
     name: verify (python + docs)
@@ -19,15 +23,13 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Python version
+        run: python3 --version
       - name: Compile export_glb.py
         run: python3 -m py_compile scripts/export_glb.py
       - name: Enforce English-only reference docs
         run: |
-          set -e
+          set -euo pipefail
           hits=$(grep -rEl 'à|è|é|ì|ò|ù|À|È|É|Ì|Ò|Ù' SKILL.md README.md CONTRIBUTING.md CREDITS.md references/ 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "Italian accent characters found in English-only docs:"
@@ -37,23 +39,17 @@ jobs:
 
   example-typecheck:
     name: example typecheck (nextjs-hero)
-    runs-on: [self-hosted, eros, node, python]
+    runs-on: [self-hosted, eros, node]
     timeout-minutes: 15
     defaults:
       run:
         working-directory: examples/nextjs-hero
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: examples/nextjs-hero/package.json
-      - name: Setup Python (for any future py step)
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Tool versions
+        run: |
+          node --version
+          npm --version
       - name: Install
         run: npm install --no-audit --no-fund
       - name: Typecheck
