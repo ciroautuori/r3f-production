@@ -15,11 +15,12 @@ concurrency:
 jobs:
   verify:
     name: verify (python + docs)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, eros, python]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Compile export_glb.py
@@ -36,18 +37,23 @@ jobs:
 
   example-typecheck:
     name: example typecheck (nextjs-hero)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: [self-hosted, eros, node, python]
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: examples/nextjs-hero
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: examples/nextjs-hero/package.json
+      - name: Setup Python (for any future py step)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Install
         run: npm install --no-audit --no-fund
       - name: Typecheck
