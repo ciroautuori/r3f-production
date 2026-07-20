@@ -1,0 +1,12 @@
+# Examples are independent Next.js apps; pull their own gitignores.
+# Keep node_modules out of the parent repo on all platforms.
+node_modules/
+.next/
+out/
+dist/
+.cache/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example

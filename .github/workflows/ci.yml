@@ -6,9 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+# Keep jobs independent and cancellable so a new push on the same branch does
+# not burn minutes on stale runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
+    name: verify (python + docs)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,3 +33,22 @@ jobs:
             echo "$hits"
             exit 1
           fi
+
+  example-typecheck:
+    name: example typecheck (nextjs-hero)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: examples/nextjs-hero
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: examples/nextjs-hero/package.json
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
