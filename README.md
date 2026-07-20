@@ -69,8 +69,9 @@ for the frontmatter and trigger description.
   - `procedural-geometry.md` — code-only geometry
   - `blender-pipeline.md` — Blender MCP recipes + optimized GLB export
 - `scripts/export_glb.py` — headless Blender -> Draco GLB exporter (+ `--meshopt` flag)
+- `docs/SELF_HOSTED_CI.md` — one-VPS / many-repos CI design (Forgejo Actions or GitHub self-hosted runner), zero per-minute billing; portable workflow + runner scripts alongside
 - `CREDITS.md` — full upstream attribution and errata for vendor reference files
-- `LICENSE` — MIT
+- `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE` — repo health
 
 ## The 13 hard rules (short version)
 
