@@ -11,7 +11,8 @@ import { QualityContext, type QualityTier } from "@/state/store";
 // - frameloop demand-driven in real projects; kept "always" for a hero demo
 export function HeroCanvas() {
   const [quality, setQuality] = useState<QualityTier>("balanced");
-  const dpr = quality === "high" ? [1.5, 2] : quality === "balanced" ? [1, 1.5] : [0.75, 1];
+  const dpr: [number, number] =
+    quality === "high" ? [1.5, 2] : quality === "balanced" ? [1, 1.5] : [0.75, 1];
 
   return (
     <QualityContext.Provider value={{ quality, setQuality }}>
