@@ -1,0 +1,9 @@
+# Force GitHub Linguist to ignore Python helper scripts
+*.py linguist-detectable=false
+*.py linguist-documentation=true
+
+# Mark the actual content as the primary language
+*.md linguist-detectable=true
+*.mdx linguist-detectable=true
+*.ts linguist-detectable=true
+*.tsx linguist-detectable=true
