@@ -1,52 +1,57 @@
-# r3f-production
+# r3f-rules
 
 > Production-grade governance for 3D web on **React Three Fiber + Three.js + Zustand + Next.js**. Treat the 3D canvas as a runtime GPU with explicit performance, accessibility and quality budgets — then audit them.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Skill](https://img.shields.io/badge/Codex%20Skill-r3f--production-orange.svg)](./SKILL.md)
+[![GitHub Repo stars](https://img.shields.io/github/stars/ciroautuori/r3f-rules?style=social)](https://github.com/ciroautuori/r3f-rules/stargazers)
+[![GitHub last commit](https://img.shields.io/github/last-commit/ciroautuori/r3f-rules)](https://github.com/ciroautuori/r3f-rules/commits/main)
+[![Skill](https://img.shields.io/badge/Codex%20Skill-r3f--rules-orange.svg)](./SKILL.md)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 A 3D scene is a runtime with a GPU budget, not a decorative animation library.
 The non-negotiable contract: 3D must be **progressive, observable, accessible,
-and always replaceable by a 2D fallback**. `r3f-production` turns that
+and always replaceable by a 2D fallback**. `r3f-rules` turns that
 contract into concrete steps, hard rules, and an audit scorecard.
 
-## Why this exists
+## Why r3f-rules?
 
-Most R3F resources teach you how to build a *demo*. This skill teaches you how
-to ship a *production* 3D experience the way award-winning studios
-(Active Theory, Lusion, 14islands) and the enterprise discipline of explicit
-budgets and deterministic state do — both already converged on the same
-conclusion: **measure, then polish**.
+- **No more guesswork**: 13 hard rules for 3D web production that replace "it works on my machine" with deterministic performance.
+- **Agent-first architecture**: Built as a native skill for Claude Code, Codex CLI, and Cursor so your AI pair-programmer enforces the rules as you type.
+- **Production-grade metrics**: Stop building 3D demos and start shipping award-winning experiences with explicit GPU budgets, accessibility guarantees, and a strict 88/100 scorecard.
 
-It works as a [Codex CLI](https://github.com/openai/codex) / Claude Code skill,
-so the rules are applied where the code is written, not in a separate wiki.
+## Quick Start
 
-## What it enforces
+### Using with Claude Code
+Copy the `SKILL.md` or this repo into your project context, and let Claude know it should follow the `r3f-rules` for 3D components.
 
-- **DOM wins.** Data, forms, CTAs, navigation stay in the DOM. The `<Canvas>`
-  is isolated, client-only, lazy.
-- **Aesthetics over geometry.** An icosahedron with HDRI, ACESFilmic and bloom
-  beats a 200k-triangle model lit wrong.
-- **Lerp everything.** Framerate-independent damping
-  `factor = 1 - Math.exp(-lambda * delta)` — identical at 30Hz and 144Hz.
-- **Explicit GPU budgets.** Every experience declares draw calls, triangles,
-  textures and max DPR; verified in QA, never left to chance.
-- **State at three speeds.** Business state in server/cache, UI state in
-  Zustand, transient per-frame state in refs. Never reactive state at 60 FPS.
-- **Accessibility is non-negotiable.** `prefers-reduced-motion` honored, every
-  critical function has a DOM equivalent, the canvas pauses off-viewport.
-
-## Install as a skill
-
-Copy (or symlink) this folder into your skills directory, e.g. for Codex CLI:
-
+### Using with Codex CLI
 ```sh
-git clone https://github.com/ciroautuori/r3f-production.git ~/.codex/skills/r3f-production
+git clone https://github.com/ciroautuori/r3f-rules.git ~/.codex/skills/r3f-rules
 ```
+Then reference it by name `r3f-rules` from your agent.
 
-Then reference it by name `r3f-production` from your agent. See `SKILL.md`
-for the frontmatter and trigger description.
+### Using with Cursor
+Add the `.cursorrules` file or copy `SKILL.md` instructions directly into your `Rules for AI` in Cursor settings to enforce the 13 rules automatically.
+
+## The 13 Rules
+
+| Rule | Description |
+| ---- | ----------- |
+| **Rule 1** | No `setState` or store update in `useFrame`. |
+| **Rule 2** | No per-frame allocations (`new Vector3()`, ...). |
+| **Rule 3** | No `metalness > 0` without an environment map. |
+| **Rule 4** | No uncapped DPR. |
+| **Rule 5** | No uncompressed GLB. |
+| **Rule 6** | No `OrbitControls` in production. |
+| **Rule 7** | No frame-count animations — only `delta`. |
+| **Rule 8** | No CSS scroll + JS scroll mix. |
+| **Rule 9** | No per-frame raycast over the whole scene. |
+| **Rule 10** | No mount/unmount of heavy scenes in transitions. |
+| **Rule 11** | No Three.js objects in persisted Zustand. |
+| **Rule 12** | No autoplay audio. |
+| **Rule 13** | No 3D where an image suffices. |
+
+Full rules and rationale in `references/anti-patterns.md`.
 
 ## Contents
 
@@ -73,24 +78,6 @@ for the frontmatter and trigger description.
 - `CREDITS.md` — full upstream attribution and errata for vendor reference files
 - `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE` — repo health
 
-## The 13 hard rules (short version)
-
-1. No `setState` or store update in `useFrame`.
-2. No per-frame allocations (`new Vector3()`, ...).
-3. No `metalness > 0` without an environment map.
-4. No uncapped DPR.
-5. No uncompressed GLB.
-6. No `OrbitControls` in production.
-7. No frame-count animations — only `delta`.
-8. No CSS scroll + JS scroll mix.
-9. No per-frame raycast over the whole scene.
-10. No mount/unmount of heavy scenes in transitions.
-11. No Three.js objects in persisted Zustand.
-12. No autoplay audio.
-13. No 3D where an image suffices.
-
-Full rules and rationale in `references/anti-patterns.md`.
-
 ## Audit scorecard (threshold: 88/100)
 
 Before declaring a 3D experience done, every entry must have one line of
@@ -107,3 +94,6 @@ welcome — see [CREDITS.md](./CREDITS.md).
 
 MIT © Ciro Autuori. Vendor reference files are preserved under their upstream
 MIT licenses with attribution; see `CREDITS.md`.
+
+---
+⭐ Star this repo if it saved you a debug session
